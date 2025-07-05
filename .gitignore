@@ -1,0 +1,25 @@
+# Go 构建产物
+*.exe
+*.out
+*.test
+*.coverprofile
+*.log
+*.tmp
+*.bak
+*.old
+bin/
+obj/
+
+# Go modules（vendor 模式用）
+vendor/
+
+# IDE / 编辑器配置
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# 系统垃圾文件
+.DS_Store
+Thumbs.db
