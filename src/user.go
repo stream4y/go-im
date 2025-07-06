@@ -73,7 +73,24 @@ func (this *User) DoMessage(msg string) {
 		this.Users()
 	} else if strings.HasPrefix(msg, "rename") {
 		// 格式  rename->张三
-		this.Rename(msg[7:])
+		this.Rename(strings.Split(msg, "->")[1])
+	} else if strings.HasPrefix(msg, "send") {
+		// 格式  send->张三->消息内容
+		split := strings.Split(msg, "->")
+		sendTo := split[1]
+		sendMsg := split[2]
+
+		user, ok := this.server.OnlineMap[sendTo]
+		if !ok {
+			this.SendMsg("system: 用户名[ " + sendTo + " ]不存在！请重新输入")
+			return
+		}
+
+		if len(sendMsg) == 0 {
+			this.SendMsg("system: 发送的消息内容为空！请重新输入")
+			return
+		}
+		user.SendMsg(this.Name + ": " + sendMsg)
 	} else {
 		this.server.BroadCast(this, msg)
 	}
@@ -91,6 +108,7 @@ func (this *User) SendMsg(msg string) {
 func (this *User) Users() {
 	server := this.server
 	server.mapLock.Lock()
+	this.SendMsg("system: \n")
 	for name, user := range server.OnlineMap {
 		msg := "[" + user.Addr + "]" + name + ":" + "在线....\n"
 		this.SendMsg(msg)
@@ -104,7 +122,7 @@ func (this *User) Rename(name string) {
 	defer this.server.mapLock.Unlock()
 
 	if _, exists := this.server.OnlineMap[name]; exists {
-		this.SendMsg("用户名" + "[ " + name + " ]" + "+已被占用")
+		this.SendMsg("system: 用户名" + "[ " + name + " ]" + "+已被占用")
 		return
 	}
 
@@ -112,5 +130,5 @@ func (this *User) Rename(name string) {
 	this.Name = name
 	this.server.OnlineMap[name] = this
 
-	this.SendMsg("用户名已更新为：" + name)
+	this.SendMsg("system: 用户名已更新为：" + name)
 }

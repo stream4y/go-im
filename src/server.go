@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -57,6 +58,9 @@ func (this *Server) Handler(conn net.Conn) {
 	user := NewUser(conn, this)
 	user.OnLine()
 
+	// 监听用户是否活跃
+	isLive := make(chan bool)
+
 	// 接受客户端发送的消息 并进行广播
 	go func() {
 		buf := make([]byte, 4096)
@@ -76,11 +80,34 @@ func (this *Server) Handler(conn net.Conn) {
 			msg := string(buf[:cnt-1])
 
 			user.DoMessage(msg)
+
+			isLive <- true
 		}
 	}()
 
 	// 当前handler阻塞
-	select {}
+	for {
+		select {
+		// 是否活跃
+		case <-isLive:
+			// 用户活跃，不做处理
+
+		// 已经超时 强制下线
+		case <-time.After(time.Minute * 10):
+			user.SendMsg("system: 已超时，强制下线")
+
+			// 清理资源，断开连接
+			close(user.C)
+			err := conn.Close()
+			if err != nil {
+				fmt.Println("close conn err:", err)
+				return
+			}
+
+			// 退出当前handler
+			return
+		}
+	}
 }
 
 // 启动服务器的接口
